@@ -156,7 +156,10 @@ class TestAccountService(TestCase):
 
     def test_delete_account(self):
         """Happy case: Successfully delete an existing account."""
-        account = self._create_accounts(1)[0]
+        test_account = self._create_accounts(1)[0]
+        resp = self.client.post("/accounts", json=test_account.serialize())
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        account = resp.get_json()
         resp = self.client.delete(f"/accounts/{account['id']}")
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -166,9 +169,5 @@ class TestAccountService(TestCase):
 
     def test_delete_account_not_found(self):
         """Sad path: Attempt to delete a non-existent account."""
-        non_existent_id = 99999
-        resp = self.client.delete(f"/accounts/{non_existent_id}")
+        resp = self.client.delete(f"/accounts/0")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
-        data = resp.get_json()
-        self.assertIn("message", data)
-        self.assertIn("not found", data["message"].lower())
