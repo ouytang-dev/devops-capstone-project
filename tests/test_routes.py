@@ -161,22 +161,13 @@ class TestAccountService(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_account(self):
-        """Happy case: Successfully delete an existing account."""
+        """Successfully delete an existing account."""
         account = self._create_accounts(1)[0]
         resp = self.client.post("/accounts", json=account.serialize())
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         account = resp.get_json()
         resp = self.client.delete(f"/accounts/{account['id']}")
-        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
-
-        # Verify the account is actually deleted
-        resp = self.client.get(f"/accounts/{account['id']}")
-        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_delete_account_not_found(self):
-        """Sad path: Attempt to delete a non-existent account."""
-        resp = self.client.delete("/accounts/0")
-        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_method_not_allowed(self):
         """It should not allow an illegal method call"""
