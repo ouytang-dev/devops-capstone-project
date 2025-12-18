@@ -152,16 +152,22 @@ class TestAccountService(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
         updated_account = resp.get_json()
-        self.assertEqual(updated_account["name"], "Updated Name")    
+        self.assertEqual(updated_account["name"], "Updated Name")
+
+    def test_update_account_not_found(self):
+        """Sad path: Attempt to delete a non-existent account."""
+        test_account = []
+        resp = self.client.put(f"/accounts/0", json=test_account)
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_account(self):
         """Happy case: Successfully delete an existing account."""
-        test_account = self._create_accounts(1)[0]
-        resp = self.client.post("/accounts", json=test_account.serialize())
+        account = self._create_accounts(1)[0]
+        resp = self.client.post("/accounts", json=account.serialize())
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         account = resp.get_json()
         resp = self.client.delete(f"/accounts/{account['id']}")
-        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
 
         # Verify the account is actually deleted
         resp = self.client.get(f"/accounts/{account['id']}")
@@ -169,5 +175,18 @@ class TestAccountService(TestCase):
 
     def test_delete_account_not_found(self):
         """Sad path: Attempt to delete a non-existent account."""
-        resp = self.client.delete(f"/accounts/0")
+        resp = self.client.delete("/accounts/0")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_method_not_allowed(self):
+        """It should not allow an illegal method call"""
+        resp = self.client.delete(BASE_URL)
+        self.assertEqual(resp.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        
+    def test_get_account_list(self):
+        """It should get a list of Accounts"""
+        self._create_accounts(5)  # Helper to create 5 accounts
+        resp = self.client.get(BASE_URL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(len(data), 5)
