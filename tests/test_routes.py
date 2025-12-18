@@ -138,3 +138,37 @@ class TestAccountService(TestCase):
         """It should not Read an Account that is not found"""
         resp = self.client.get(f"{BASE_URL}/0")
         self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_account(self):
+        """It should Update a single account"""
+        test_account = self._create_accounts(1)[0]
+        resp = self.client.post("/accounts", json=test_account.serialize())
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        new_account = resp.get_json()
+
+        # Update the account's name
+        new_account["name"] = "Updated Name"
+        resp = self.client.put(f"/accounts/{new_account['id']}", json=new_account)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+        updated_account = resp.get_json()
+        self.assertEqual(updated_account["name"], "Updated Name")    
+
+    def test_delete_account(self):
+        """Happy case: Successfully delete an existing account."""
+        account = self._create_accounts(1)[0]
+        resp = self.client.delete(f"/accounts/{account['id']}")
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Verify the account is actually deleted
+        resp = self.client.get(f"/accounts/{account['id']}")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_account_not_found(self):
+        """Sad path: Attempt to delete a non-existent account."""
+        non_existent_id = 99999
+        resp = self.client.delete(f"/accounts/{non_existent_id}")
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+        data = resp.get_json()
+        self.assertIn("message", data)
+        self.assertIn("not found", data["message"].lower())
